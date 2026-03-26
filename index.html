@@ -557,6 +557,62 @@
     .legend-dot.sev-high     { background: var(--sev-high); }
     .legend-dot.sev-critical { background: var(--sev-critical); }
 
+    /* ======= Map Banner ======= */
+    .map-banner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 28px;
+      text-decoration: none;
+      box-shadow: var(--shadow);
+      transition: transform var(--transition), box-shadow var(--transition);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .map-banner:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .map-banner-icon { font-size: 2rem; flex-shrink: 0; line-height: 1; }
+
+    .map-banner-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .map-banner-text strong { font-size: 1rem; font-weight: 700; }
+
+    .map-banner-text span { font-size: 0.85rem; color: rgba(255, 255, 255, 0.72); }
+
+    .map-banner-arrow {
+      font-size: 1.25rem;
+      color: rgba(255, 255, 255, 0.6);
+      transition: transform var(--transition), color var(--transition);
+      flex-shrink: 0;
+    }
+
+    .map-banner:hover .map-banner-arrow {
+      transform: translateX(4px);
+      color: #fff;
+    }
+
+    /* Highlighted map button in nav */
+    .nav-links .nav-map-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-links .nav-map-btn:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
     /* ======= Responsive ======= */
     @media (max-width: 640px) {
       nav { padding: 0 16px; }
@@ -588,6 +644,7 @@
       <li><a href="https://www.rtvslo.si/" target="_blank" rel="noopener">📺 RTV Slovenija</a></li>
       <li><a href="https://www.24ur.com/" target="_blank" rel="noopener">📰 24ur</a></li>
       <li><a href="https://spin3.sos112.si/" target="_blank" rel="noopener">🆘 SPIN112</a></li>
+      <li><a class="nav-map-btn" href="https://spin3.sos112.si/javno/zemljevid" target="_blank" rel="noopener">🗺️ Zemljevid</a></li>
     </ul>
   </div>
 </nav>
@@ -605,6 +662,16 @@
 
 <!-- ======= Main ======= -->
 <main>
+
+  <!-- Map Banner -->
+  <a class="map-banner" href="https://spin3.sos112.si/javno/zemljevid" target="_blank" rel="noopener">
+    <span class="map-banner-icon">🗺️</span>
+    <div class="map-banner-text">
+      <strong>Interaktivni zemljevid nesreč</strong>
+      <span>Oglejte si nesreče na zemljevidu v realnem času — SPIN 112</span>
+    </div>
+    <span class="map-banner-arrow">→</span>
+  </a>
 
   <!-- Severity Legend -->
   <div class="legend">
@@ -674,6 +741,7 @@
         <h4>🔗 Koristne povezave</h4>
         <ul>
           <li><a href="https://spin3.sos112.si/" target="_blank" rel="noopener">🆘 SPIN 112</a></li>
+          <li><a href="https://spin3.sos112.si/javno/zemljevid" target="_blank" rel="noopener">🗺️ Zemljevid nesreč</a></li>
           <li><a href="https://www.rtvslo.si/" target="_blank" rel="noopener">📺 RTV Slovenija</a></li>
           <li><a href="https://www.24ur.com/" target="_blank" rel="noopener">📰 24ur</a></li>
           <li><a href="https://www.promet.si/" target="_blank" rel="noopener">🛣️ Promet.si</a></li>
@@ -698,8 +766,8 @@
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  // RSS feed endpoint for traffic accidents (category 30)
-  const RSS_URL = 'https://spin3.sos112.si/javno/ODApi/30';
+  // RSS feed endpoint for traffic accidents (category 379)
+  const RSS_URL = 'https://spin3.sos112.si/javno/ODApi/379';
 
   const grid       = document.getElementById('accidents-grid');
   const errorBox   = document.getElementById('error-box');
