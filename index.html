@@ -415,13 +415,20 @@
       background: #fafbfc;
     }
 
-    .card-time {
+    .card-time { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+
+    .card-detail-link {
       font-size: 0.8rem;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 5px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color var(--transition);
     }
+
+    .card-detail-link:hover { color: var(--primary-dark); text-decoration: underline; }
+
+    .card-link { color: inherit; text-decoration: none; }
+    .card-link:hover { text-decoration: underline; }
 
     /* ======= Empty State ======= */
     .empty-state {
@@ -691,7 +698,8 @@
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  const API_URL = 'https://spin3.sos112.si/api/javno/NESRECA/list';
+  // RSS feed endpoint for traffic accidents (category 30)
+  const RSS_URL = 'https://spin3.sos112.si/javno/ODApi/30';
 
   const grid       = document.getElementById('accidents-grid');
   const errorBox   = document.getElementById('error-box');
@@ -700,6 +708,8 @@
   const countBadge = document.getElementById('count-badge');
   const lastUpdEl  = document.getElementById('last-updated');
   const body       = document.body;
+
+  /* ---- Helpers ---- */
 
   function setLoading(on) {
     if (on) {
@@ -718,28 +728,13 @@
     countBadge.textContent = '—';
   }
 
-  function getSeverity(nesreca) {
-    const tip = (nesreca.tip || '').toLowerCase();
-    const ops = (nesreca.opis || '').toLowerCase();
-    const combined = tip + ' ' + ops;
-
-    if (/smrt|mrtv|fatal|umrl/i.test(combined))         return 'critical';
-    if (/hud[ao]?\s+tel|te[žz]k[ao]/i.test(combined))  return 'high';
-    if (/la[žz]j[ai]|manjš/i.test(combined))            return 'low';
-    return 'medium';
-  }
-
-  function getSeverityLabel(sev) {
-    return { low: 'Lažja', medium: 'Zmerna', high: 'Huda', critical: 'Kritična' }[sev] || 'Neznano';
-  }
-
-  function getCardIcon(nesreca) {
-    const tip = (nesreca.tip || '').toLowerCase();
-    if (/motorist|motocikl/i.test(tip))  return '🏍️';
-    if (/tovorn|vlak/i.test(tip))        return '🚛';
-    if (/kolo|kolesar/i.test(tip))       return '🚲';
-    if (/pešec|peš/i.test(tip))         return '🚶';
-    return '🚗';
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function formatDate(dateStr) {
@@ -754,82 +749,130 @@
     } catch { return dateStr; }
   }
 
-  function createCard(nesreca, index) {
-    const sev  = getSeverity(nesreca);
-    const icon = getCardIcon(nesreca);
-    const sevLabel = getSeverityLabel(sev);
+  /* ---- RSS Parsing ---- */
 
-    const lokacija = nesreca.lokacija || nesreca.kraj || nesreca.naslov || 'Neznana lokacija';
-    const tip      = nesreca.tipNesrece || nesreca.tip || nesreca.vrsta || null;
-    const cas      = formatDate(nesreca.cas || nesreca.datum || nesreca.datumCas);
-    const opis     = nesreca.opis || nesreca.vzrok || null;
-    const cesta    = nesreca.cesta || nesreca.odsek || null;
+  /**
+   * Parse an RSS XML document and return an array of plain objects,
+   * one per <item> element.
+   */
+  function parseRSS(xmlText) {
+    const parser = new DOMParser();
+    const doc    = parser.parseFromString(xmlText, 'application/xml');
+
+    // Detect parse errors
+    const parseErr = doc.querySelector('parsererror');
+    if (parseErr) throw new Error('Napaka pri razčlenjevanju RSS: ' + parseErr.textContent.trim().slice(0, 120));
+
+    const items = Array.from(doc.querySelectorAll('item'));
+    return items.map(item => {
+      const getText = tag => {
+        const el = item.querySelector(tag);
+        return el ? el.textContent.trim() : null;
+      };
+
+      const title       = getText('title')       || '';
+      const description = getText('description') || '';
+      const pubDate     = getText('pubDate')      || getText('pubdate') || null;
+      const link        = getText('link')         || null;
+      const guid        = getText('guid')         || null;
+
+      // Some SPIN feeds use <category> for the accident type
+      const category    = getText('category')     || null;
+
+      return { title, description, pubDate, link, guid, category };
+    });
+  }
+
+  /* ---- Severity detection ---- */
+
+  function getSeverity(item) {
+    const combined = item.title + ' ' + item.description + ' ' + (item.category || '');
+    if (/smrt|mrtv|fatal|umrl|smrtn/i.test(combined))                          return 'critical';
+    if (/hud[ao]\s*tel|telesn|te[žžz]k[ao]\s*po[šs]/i.test(combined))         return 'high';
+    if (/la[žz]j[ai]\s*po[šs]|manjš/i.test(combined))                         return 'low';
+    return 'medium';
+  }
+
+  function getSeverityLabel(sev) {
+    return { low: 'Lažja', medium: 'Zmerna', high: 'Huda', critical: 'Kritična' }[sev] || 'Neznano';
+  }
+
+  function getCardIcon(item) {
+    const text = item.title + ' ' + item.description;
+    if (/motocikl|motorist/i.test(text)) return '🏍️';
+    if (/tovorn|tovornjak/i.test(text))  return '🚛';
+    if (/kolesar|kolo\b/i.test(text))    return '🚲';
+    if (/pešec|pe[šs]/i.test(text))     return '🚶';
+    if (/vlak|[žz]eleznic/i.test(text)) return '🚂';
+    return '🚗';
+  }
+
+  /* ---- Card rendering ---- */
+
+  function createCard(item, index) {
+    const sev      = getSeverity(item);
+    const icon     = getCardIcon(item);
+    const sevLabel = getSeverityLabel(sev);
+    const cas      = formatDate(item.pubDate);
+
+    // Use title as the location/main heading; description as detail text
+    const title = item.title || 'Prometna nesreča';
+    const desc  = item.description || null;
+    const type  = item.category    || null;
 
     const card = document.createElement('div');
     card.className = 'card';
     card.style.animationDelay = `${index * 0.05}s`;
 
+    const linkOpen  = item.link ? `<a class="card-link" href="${escHtml(item.link)}" target="_blank" rel="noopener">` : '';
+    const linkClose = item.link ? '</a>' : '';
+
     card.innerHTML = `
-      <div class="card-accent ${'sev-' + sev}"></div>
+      <div class="card-accent sev-${sev}"></div>
       <div class="card-header">
         <div class="card-icon">${icon}</div>
         <div class="card-badges">
           <span class="badge badge-sev-${sev}">${sevLabel}</span>
-          ${tip ? `<span class="badge badge-type">${escHtml(tip)}</span>` : ''}
+          ${type ? `<span class="badge badge-type">${escHtml(type)}</span>` : ''}
         </div>
       </div>
       <div class="card-body">
-        <div class="card-title">📍 ${escHtml(lokacija)}</div>
+        <div class="card-title">${linkOpen}📍 ${escHtml(title)}${linkClose}</div>
         <div class="card-meta">
-          ${cesta  ? `<div class="meta-row"><span class="meta-icon">🛣️</span><span class="meta-text">${escHtml(cesta)}</span></div>` : ''}
-          ${opis   ? `<div class="meta-row"><span class="meta-icon">📝</span><span class="meta-text">${escHtml(opis)}</span></div>`  : ''}
-          ${cas    ? `<div class="meta-row"><span class="meta-icon">🕐</span><span class="meta-text">${escHtml(cas)}</span></div>`   : ''}
+          ${desc ? `<div class="meta-row"><span class="meta-icon">📝</span><span class="meta-text">${escHtml(desc)}</span></div>` : ''}
         </div>
       </div>
       <div class="card-footer">
         <span class="card-time">${cas ? `⏱️ ${escHtml(cas)}` : '⏱️ Čas ni znan'}</span>
+        ${item.link ? `<a class="card-detail-link" href="${escHtml(item.link)}" target="_blank" rel="noopener">Podrobnosti →</a>` : ''}
       </div>
     `;
     return card;
   }
 
-  function escHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
+  /* ---- Data loading ---- */
 
   async function loadData() {
     setLoading(true);
     grid.innerHTML = '';
 
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch(RSS_URL);
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      const data = await res.json();
-
-      const list = Array.isArray(data) ? data
-                 : Array.isArray(data?.data)   ? data.data
-                 : Array.isArray(data?.items)  ? data.items
-                 : Array.isArray(data?.result) ? data.result
-                 : null;
-
-      if (!list) throw new Error('Nepričakovana oblika podatkov.');
+      const xmlText = await res.text();
+      const items   = parseRSS(xmlText);
 
       setLoading(false);
-      countBadge.textContent = list.length;
+      countBadge.textContent = items.length;
       lastUpdEl.textContent  = new Date().toLocaleString('sl-SI');
 
-      if (list.length === 0) {
+      if (items.length === 0) {
         emptyState.style.display = 'flex';
         return;
       }
 
       const fragment = document.createDocumentFragment();
-      list.forEach((item, i) => fragment.appendChild(createCard(item, i)));
+      items.forEach((item, i) => fragment.appendChild(createCard(item, i)));
       grid.appendChild(fragment);
 
     } catch (err) {
