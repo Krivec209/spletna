@@ -1,7 +1,8 @@
 'use strict';
 
 /* ── Config ──────────────────────────────────────────────────────── */
-const BASE = 'https://api.terraquakeapi.com/v1/earthquakes';
+const BASE        = 'https://api.terraquakeapi.com/v1/earthquakes';
+const CORS_PROXY  = 'https://corsproxy.io/?url=';
 
 /* ── State ───────────────────────────────────────────────────────── */
 let currentPage = 1;
@@ -110,17 +111,49 @@ async function fetchEarthquakes(endpoint, params, page, limit) {
   const query = { ...params };
   if (page  !== null) query.page  = page;
   if (limit !== null) query.limit = limit;
-  const url = buildUrl(endpoint, query);
+  const directUrl = buildUrl(endpoint, query);
 
   showLoading(true);
   hideError();
 
-  const res = await fetch(url);
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`API error ${res.status}: ${text || res.statusText}`);
+  // 1. Try the direct request first.
+  try {
+    const res = await fetch(directUrl);
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`API error ${res.status}: ${text || res.statusText}`);
+    }
+    return await res.json();
+  } catch (directErr) {
+    // Only fall back to the CORS proxy for network / CORS errors (TypeError).
+    // Real HTTP errors (4xx / 5xx) are propagated immediately.
+    if (!(directErr instanceof TypeError)) {
+      throw directErr;
+    }
   }
-  return res.json();
+
+  // 2. Retry via CORS proxy.
+  try {
+    const proxyUrl = CORS_PROXY + encodeURIComponent(directUrl);
+    const res = await fetch(proxyUrl);
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`API error ${res.status}: ${text || res.statusText}`);
+    }
+    const json = await res.json();
+    // corsproxy.io wraps the body in { contents: '...', status: {...} }
+    if (json && typeof json.contents === 'string') {
+      return JSON.parse(json.contents);
+    }
+    return json;
+  } catch (proxyErr) {
+    throw new Error(
+      proxyErr.message +
+      (proxyErr instanceof TypeError
+        ? ' — the API may be temporarily unavailable or blocking browser requests.'
+        : '')
+    );
+  }
 }
 
 /* ── Render table ────────────────────────────────────────────────── */
@@ -227,8 +260,9 @@ async function doSearch(page = 1) {
     renderTable(list);
 
     // Pagination info
-    const total     = data.total ?? data.totalCount ?? data.count ?? null;
-    const totalPages = data.totalPages ?? data.pages ?? (total !== null ? Math.ceil(total / limit) : null);
+    const total      = data.total ?? data.totalCount ?? data.count ?? null;
+    const limitNum   = limit ? parseInt(limit, 10) : 0;
+    const totalPages = data.totalPages ?? data.pages ?? (total !== null && limitNum > 0 ? Math.ceil(total / limitNum) : null);
 
     updatePagination(page, totalPages, list.length, total, limit);
 
@@ -327,3 +361,5 @@ document.addEventListener('keydown', (e) => {
 
 /* ── Init ────────────────────────────────────────────────────────── */
 showGroup(endpointSel.value);
+// Auto-load recent earthquakes on first visit
+doSearch(1);
