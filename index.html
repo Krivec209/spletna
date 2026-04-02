@@ -280,6 +280,11 @@
 
     .btn-retry:hover { opacity: 0.88; }
 
+    .btn-map-link {
+      background: var(--primary);
+      text-decoration: none;
+    }
+
     /* ======= Grid ======= */
     #accidents-grid {
       display: grid;
@@ -714,6 +719,7 @@
     <div class="error-icon">⚠️</div>
     <h3>Napaka pri nalaganju</h3>
     <p id="error-message">Podatkov ni bilo mogoče naložiti. Preverite internetno povezavo ali poskusite znova.</p>
+    <a class="btn-retry btn-map-link" href="https://spin3.sos112.si/javno/zemljevid" target="_blank" rel="noopener noreferrer">🗺️ Odpri zemljevid nesreč</a>
     <button class="btn-retry" onclick="loadData()">🔄 Poskusi znova</button>
   </div>
 
@@ -767,7 +773,8 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 
   // RSS feed endpoint for traffic accidents (category 379)
-  const RSS_URL = 'https://spin3.sos112.si/javno/ODApi/379';
+  const RSS_URL       = 'https://spin3.sos112.si/javno/ODApi/379';
+  const RSS_URL_PROXY = 'https://corsproxy.io/?' + encodeURIComponent(RSS_URL);
 
   const grid       = document.getElementById('accidents-grid');
   const errorBox   = document.getElementById('error-box');
@@ -920,15 +927,28 @@
 
   /* ---- Data loading ---- */
 
+  async function fetchXml(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    return res.text();
+  }
+
   async function loadData() {
     setLoading(true);
     grid.innerHTML = '';
 
     try {
-      const res = await fetch(RSS_URL);
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      const xmlText = await res.text();
-      const items   = parseRSS(xmlText);
+      let xmlText;
+      try {
+        // Try direct fetch first (works when the API has CORS headers)
+        xmlText = await fetchXml(RSS_URL);
+      } catch (directErr) {
+        // Fall back to CORS proxy if direct fetch is blocked
+        console.warn('Direct fetch failed, trying CORS proxy:', directErr.message);
+        xmlText = await fetchXml(RSS_URL_PROXY);
+      }
+
+      const items = parseRSS(xmlText);
 
       setLoading(false);
       countBadge.textContent = items.length;
@@ -945,7 +965,7 @@
 
     } catch (err) {
       setLoading(false);
-      showError(`Napaka: ${err.message}`);
+      showError(`Podatkov ni bilo mogoče naložiti (${err.message}).`);
     }
   }
 
