@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prometne nesreče v Sloveniji</title>
+  <style>
+    /* ======= CSS Variables ======= */
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #1558b0;
+      --bg: #f0f4f9;
+      --card-bg: #ffffff;
+      --text: #202124;
+      --text-muted: #5f6368;
+      --border: #dadce0;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.15);
+      --radius: 12px;
+      --transition: 0.25s ease;
+
+      /* Severity colors */
+      --sev-low: #34a853;
+      --sev-low-bg: #e6f4ea;
+      --sev-medium: #fbbc04;
+      --sev-medium-bg: #fef7e0;
+      --sev-high: #ff6d00;
+      --sev-high-bg: #fff0e0;
+      --sev-critical: #ea4335;
+      --sev-critical-bg: #fce8e6;
+    }
+
+    /* ======= Reset & Base ======= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.6;
+    }
+
+    /* ======= Navigation ======= */
+    nav {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      gap: 16px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    .nav-brand .brand-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      list-style: none;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: background var(--transition), color var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-links a:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    /* ======= Header / Hero ======= */
+    .hero {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: #fff;
+      text-align: center;
+      padding: 48px 24px 56px;
+    }
+
+    .hero h1 {
+      font-size: clamp(1.75rem, 4vw, 2.75rem);
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .hero p {
+      font-size: 1.05rem;
+      color: rgba(255, 255, 255, 0.72);
+      max-width: 520px;
+      margin: 0 auto 24px;
+    }
+
+    .hero-stats {
+      display: inline-flex;
+      gap: 24px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 40px;
+      padding: 10px 28px;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .hero-stats span { display: flex; align-items: center; gap: 6px; }
+
+    /* ======= Main Content ======= */
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+
+    /* ======= Toolbar ======= */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .toolbar-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-count {
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+      box-shadow: 0 2px 8px rgba(26, 115, 232, 0.35);
+    }
+
+    .btn-refresh:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(26, 115, 232, 0.45);
+    }
+
+    .btn-refresh:active { transform: translateY(0); }
+
+    .btn-refresh .spin { animation: spin 1s linear infinite; display: none; }
+    .loading .btn-refresh .spin { display: inline-block; }
+    .loading .btn-refresh .refresh-icon { display: none; }
+
+    /* ======= Loading State ======= */
+    .loader-wrapper {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 24px;
+      gap: 20px;
+      color: var(--text-muted);
+    }
+
+    .loading .loader-wrapper { display: flex; }
+    .loading #accidents-grid { display: none; }
+
+    .spinner {
+      width: 52px;
+      height: 52px;
+      border: 5px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    .loader-text {
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ======= Error State ======= */
+    .error-box {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      background: var(--sev-critical-bg);
+      border: 2px solid #f5c6c2;
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      margin: 24px 0;
+    }
+
+    .error-box .error-icon { font-size: 3rem; }
+
+    .error-box h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--sev-critical);
+    }
+
+    .error-box p { color: var(--text-muted); max-width: 420px; font-size: 0.95rem; }
+
+    .btn-retry {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--sev-critical);
+      color: #fff;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity var(--transition);
+    }
+
+    .btn-retry:hover { opacity: 0.88; }
+
+    .btn-map-link {
+      background: var(--primary);
+      text-decoration: none;
+    }
+
+    /* ======= Grid ======= */
+    #accidents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    /* ======= Accident Card ======= */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      transition: transform var(--transition), box-shadow var(--transition);
+      animation: fadeInUp 0.4s ease both;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card:nth-child(1)  { animation-delay: 0.04s; }
+    .card:nth-child(2)  { animation-delay: 0.08s; }
+    .card:nth-child(3)  { animation-delay: 0.12s; }
+    .card:nth-child(4)  { animation-delay: 0.16s; }
+    .card:nth-child(5)  { animation-delay: 0.20s; }
+    .card:nth-child(6)  { animation-delay: 0.24s; }
+    .card:nth-child(7)  { animation-delay: 0.28s; }
+    .card:nth-child(8)  { animation-delay: 0.32s; }
+
+    /* Severity accent bar at top of card */
+    .card-accent {
+      height: 5px;
+      width: 100%;
+    }
+
+    .card-accent.sev-low      { background: var(--sev-low); }
+    .card-accent.sev-medium   { background: var(--sev-medium); }
+    .card-accent.sev-high     { background: var(--sev-high); }
+    .card-accent.sev-critical { background: var(--sev-critical); }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px 12px;
+    }
+
+    .card-icon {
+      font-size: 2rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .badge-sev-low      { background: var(--sev-low-bg);      color: #137333; }
+    .badge-sev-medium   { background: var(--sev-medium-bg);   color: #b05f00; }
+    .badge-sev-high     { background: var(--sev-high-bg);     color: #c14b00; }
+    .badge-sev-critical { background: var(--sev-critical-bg); color: #c5221f; }
+    .badge-type {
+      background: #e8f0fe;
+      color: #1967d2;
+    }
+
+    .card-body {
+      padding: 4px 18px 16px;
+      flex: 1;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .meta-icon {
+      flex-shrink: 0;
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+
+    .meta-text { line-height: 1.4; }
+
+    .card-footer {
+      border-top: 1px solid var(--border);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #fafbfc;
+    }
+
+    .card-time { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+
+    .card-detail-link {
+      font-size: 0.8rem;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color var(--transition);
+    }
+
+    .card-detail-link:hover { color: var(--primary-dark); text-decoration: underline; }
+
+    .card-link { color: inherit; text-decoration: none; }
+    .card-link:hover { text-decoration: underline; }
+
+    /* ======= Empty State ======= */
+    .empty-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 80px 24px;
+      gap: 16px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .empty-icon { font-size: 4rem; }
+
+    .empty-state h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ======= Footer ======= */
+    footer {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: rgba(255, 255, 255, 0.75);
+      padding: 40px 24px 28px;
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px;
+      margin-bottom: 32px;
+    }
+
+    .footer-col h4 {
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+    .footer-col a {
+      color: rgba(255, 255, 255, 0.65);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .footer-col a:hover { color: #fff; }
+
+    .footer-col p { font-size: 0.875rem; line-height: 1.7; }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    .footer-bottom a {
+      color: rgba(255, 255, 255, 0.55);
+      text-decoration: none;
+    }
+
+    .footer-bottom a:hover { color: #fff; }
+
+    /* ======= Severity Legend ======= */
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .legend-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: default;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-item.sev-low      { background: var(--sev-low-bg);      color: #137333; }
+    .legend-item.sev-medium   { background: var(--sev-medium-bg);   color: #b05f00; }
+    .legend-item.sev-high     { background: var(--sev-high-bg);     color: #c14b00; }
+    .legend-item.sev-critical { background: var(--sev-critical-bg); color: #c5221f; }
+
+    .legend-dot.sev-low      { background: var(--sev-low); }
+    .legend-dot.sev-medium   { background: var(--sev-medium); }
+    .legend-dot.sev-high     { background: var(--sev-high); }
+    .legend-dot.sev-critical { background: var(--sev-critical); }
+
+    /* ======= Map Banner ======= */
+    .map-banner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 28px;
+      text-decoration: none;
+      box-shadow: var(--shadow);
+      transition: transform var(--transition), box-shadow var(--transition);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .map-banner:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .map-banner-icon { font-size: 2rem; flex-shrink: 0; line-height: 1; }
+
+    .map-banner-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .map-banner-text strong { font-size: 1rem; font-weight: 700; }
+
+    .map-banner-text span { font-size: 0.85rem; color: rgba(255, 255, 255, 0.72); }
+
+    .map-banner-arrow {
+      font-size: 1.25rem;
+      color: rgba(255, 255, 255, 0.6);
+      transition: transform var(--transition), color var(--transition);
+      flex-shrink: 0;
+    }
+
+    .map-banner:hover .map-banner-arrow {
+      transform: translateX(4px);
+      color: #fff;
+    }
+
+    /* Highlighted map button in nav */
+    .nav-links .nav-map-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-links .nav-map-btn:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    /* ======= Responsive ======= */
+    @media (max-width: 640px) {
+      nav { padding: 0 16px; }
+      .nav-inner { height: 56px; }
+      .nav-brand span { display: none; }
+      .hero { padding: 32px 16px 40px; }
+      .hero-stats { flex-wrap: wrap; justify-content: center; }
+      main { padding: 20px 16px 40px; }
+      #accidents-grid { grid-template-columns: 1fr; }
+      .toolbar { flex-direction: column; align-items: flex-start; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 400px) {
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ======= Navigation ======= -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-brand" href="#">
+      <span class="brand-icon">🚗</span>
+      <span>Prometne nesreče SLO</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="https://www.rtvslo.si/" target="_blank" rel="noopener">📺 RTV Slovenija</a></li>
+      <li><a href="https://www.24ur.com/" target="_blank" rel="noopener">📰 24ur</a></li>
+      <li><a href="https://spin3.sos112.si/" target="_blank" rel="noopener">🆘 SPIN112</a></li>
+      <li><a class="nav-map-btn" href="https://spin3.sos112.si/javno/zemljevid" target="_blank" rel="noopener">🗺️ Zemljevid</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ======= Hero ======= -->
+<header class="hero">
+  <h1>🚨 Prometne nesreče v Sloveniji</h1>
+  <p>Podatki v realnem času o prometnih nesrečah po celotni Sloveniji</p>
+  <div class="hero-stats">
+    <span>📡 Vir: SPIN 112</span>
+    <span>🔄 Samodejno posodabljanje</span>
+    <span>📍 Celotna Slovenija</span>
+  </div>
+</header>
+
+<!-- ======= Main ======= -->
+<main>
+
+  <!-- Map Banner -->
+  <a class="map-banner" href="https://spin3.sos112.si/javno/zemljevid" target="_blank" rel="noopener">
+    <span class="map-banner-icon">🗺️</span>
+    <div class="map-banner-text">
+      <strong>Interaktivni zemljevid nesreč</strong>
+      <span>Oglejte si nesreče na zemljevidu v realnem času — SPIN 112</span>
+    </div>
+    <span class="map-banner-arrow">→</span>
+  </a>
+
+  <!-- Severity Legend -->
+  <div class="legend">
+    <span class="legend-label">Resnost:</span>
+    <span class="legend-item sev-low">
+      <span class="legend-dot sev-low"></span> Lažja
+    </span>
+    <span class="legend-item sev-medium">
+      <span class="legend-dot sev-medium"></span> Zmerna
+    </span>
+    <span class="legend-item sev-high">
+      <span class="legend-dot sev-high"></span> Huda
+    </span>
+    <span class="legend-item sev-critical">
+      <span class="legend-dot sev-critical"></span> Kritična
+    </span>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-title">
+      Nesreče
+      <span class="badge-count" id="count-badge">—</span>
+    </div>
+    <button class="btn-refresh" id="btn-refresh" onclick="loadData()">
+      <span class="refresh-icon">🔄</span>
+      <span class="spin">⏳</span>
+      Osveži
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loader-wrapper">
+    <div class="spinner"></div>
+    <p class="loader-text">Nalaganje podatkov…</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="error-box">
+    <div class="error-icon">⚠️</div>
+    <h3>Napaka pri nalaganju</h3>
+    <p id="error-message">Podatkov ni bilo mogoče naložiti. Preverite internetno povezavo ali poskusite znova.</p>
+    <a class="btn-retry btn-map-link" href="https://spin3.sos112.si/javno/zemljevid" target="_blank" rel="noopener noreferrer">🗺️ Odpri zemljevid nesreč</a>
+    <button class="btn-retry" onclick="loadData()">🔄 Poskusi znova</button>
+  </div>
+
+  <!-- Empty -->
+  <div class="empty-state" id="empty-state">
+    <div class="empty-icon">✅</div>
+    <h3>Ni aktivnih nesreč</h3>
+    <p>Trenutno ni zabeleženih aktivnih prometnih nesreč.</p>
+  </div>
+
+  <!-- Accidents Grid -->
+  <div id="accidents-grid"></div>
+
+</main>
+
+<!-- ======= Footer ======= -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>🚗 O aplikaciji</h4>
+        <p>Aplikacija prikazuje prometne nesreče v Sloveniji v realnem času, pridobljene iz sistema SPIN 112.</p>
+      </div>
+      <div class="footer-col">
+        <h4>🔗 Koristne povezave</h4>
+        <ul>
+          <li><a href="https://spin3.sos112.si/" target="_blank" rel="noopener">🆘 SPIN 112</a></li>
+          <li><a href="https://spin3.sos112.si/javno/zemljevid" target="_blank" rel="noopener">🗺️ Zemljevid nesreč</a></li>
+          <li><a href="https://www.rtvslo.si/" target="_blank" rel="noopener">📺 RTV Slovenija</a></li>
+          <li><a href="https://www.24ur.com/" target="_blank" rel="noopener">📰 24ur</a></li>
+          <li><a href="https://www.promet.si/" target="_blank" rel="noopener">🛣️ Promet.si</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>🆘 V sili pokličite</h4>
+        <ul>
+          <li><a href="tel:112">🚑 Reševalci — 112</a></li>
+          <li><a href="tel:113">🚔 Policija — 113</a></li>
+          <li><a href="tel:1987">🛣️ DARS — 1987</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span id="year"></span> Prometne nesreče SLO &mdash; Podatki: SPIN 112</span>
+      <span>Posodobljeno: <span id="last-updated">—</span></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // RSS feed endpoint for traffic accidents (category 379)
+  const RSS_URL       = 'https://spin3.sos112.si/javno/ODApi/379';
+  const RSS_URL_PROXY = 'https://corsproxy.io/?' + encodeURIComponent(RSS_URL);
+
+  const grid       = document.getElementById('accidents-grid');
+  const errorBox   = document.getElementById('error-box');
+  const errorMsg   = document.getElementById('error-message');
+  const emptyState = document.getElementById('empty-state');
+  const countBadge = document.getElementById('count-badge');
+  const lastUpdEl  = document.getElementById('last-updated');
+  const body       = document.body;
+
+  /* ---- Helpers ---- */
+
+  function setLoading(on) {
+    if (on) {
+      body.classList.add('loading');
+      errorBox.style.display   = 'none';
+      emptyState.style.display = 'none';
+    } else {
+      body.classList.remove('loading');
+    }
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg || 'Podatkov ni bilo mogoče naložiti.';
+    errorBox.style.display = 'flex';
+    grid.innerHTML = '';
+    countBadge.textContent = '—';
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return null;
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d)) return dateStr;
+      return d.toLocaleString('sl-SI', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    } catch { return dateStr; }
+  }
+
+  /* ---- RSS Parsing ---- */
+
+  /**
+   * Parse an RSS XML document and return an array of plain objects,
+   * one per <item> element.
+   */
+  function parseRSS(xmlText) {
+    const parser = new DOMParser();
+    const doc    = parser.parseFromString(xmlText, 'application/xml');
+
+    // Detect parse errors
+    const parseErr = doc.querySelector('parsererror');
+    if (parseErr) throw new Error('Napaka pri razčlenjevanju RSS: ' + parseErr.textContent.trim().slice(0, 120));
+
+    const items = Array.from(doc.querySelectorAll('item'));
+    return items.map(item => {
+      const getText = tag => {
+        const el = item.querySelector(tag);
+        return el ? el.textContent.trim() : null;
+      };
+
+      const title       = getText('title')       || '';
+      const description = getText('description') || '';
+      const pubDate     = getText('pubDate')      || getText('pubdate') || null;
+      const link        = getText('link')         || null;
+      const guid        = getText('guid')         || null;
+
+      // Some SPIN feeds use <category> for the accident type
+      const category    = getText('category')     || null;
+
+      return { title, description, pubDate, link, guid, category };
+    });
+  }
+
+  /* ---- Severity detection ---- */
+
+  function getSeverity(item) {
+    const combined = item.title + ' ' + item.description + ' ' + (item.category || '');
+    if (/smrt|mrtv|fatal|umrl|smrtn/i.test(combined))                          return 'critical';
+    if (/hud[ao]\s*tel|telesn|te[žžz]k[ao]\s*po[šs]/i.test(combined))         return 'high';
+    if (/la[žz]j[ai]\s*po[šs]|manjš/i.test(combined))                         return 'low';
+    return 'medium';
+  }
+
+  function getSeverityLabel(sev) {
+    return { low: 'Lažja', medium: 'Zmerna', high: 'Huda', critical: 'Kritična' }[sev] || 'Neznano';
+  }
+
+  function getCardIcon(item) {
+    const text = item.title + ' ' + item.description;
+    if (/motocikl|motorist/i.test(text)) return '🏍️';
+    if (/tovorn|tovornjak/i.test(text))  return '🚛';
+    if (/kolesar|kolo\b/i.test(text))    return '🚲';
+    if (/pešec|pe[šs]/i.test(text))     return '🚶';
+    if (/vlak|[žz]eleznic/i.test(text)) return '🚂';
+    return '🚗';
+  }
+
+  /* ---- Card rendering ---- */
+
+  function createCard(item, index) {
+    const sev      = getSeverity(item);
+    const icon     = getCardIcon(item);
+    const sevLabel = getSeverityLabel(sev);
+    const cas      = formatDate(item.pubDate);
+
+    // Use title as the location/main heading; description as detail text
+    const title = item.title || 'Prometna nesreča';
+    const desc  = item.description || null;
+    const type  = item.category    || null;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.animationDelay = `${index * 0.05}s`;
+
+    const linkOpen  = item.link ? `<a class="card-link" href="${escHtml(item.link)}" target="_blank" rel="noopener">` : '';
+    const linkClose = item.link ? '</a>' : '';
+
+    card.innerHTML = `
+      <div class="card-accent sev-${sev}"></div>
+      <div class="card-header">
+        <div class="card-icon">${icon}</div>
+        <div class="card-badges">
+          <span class="badge badge-sev-${sev}">${sevLabel}</span>
+          ${type ? `<span class="badge badge-type">${escHtml(type)}</span>` : ''}
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${linkOpen}📍 ${escHtml(title)}${linkClose}</div>
+        <div class="card-meta">
+          ${desc ? `<div class="meta-row"><span class="meta-icon">📝</span><span class="meta-text">${escHtml(desc)}</span></div>` : ''}
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="card-time">${cas ? `⏱️ ${escHtml(cas)}` : '⏱️ Čas ni znan'}</span>
+        ${item.link ? `<a class="card-detail-link" href="${escHtml(item.link)}" target="_blank" rel="noopener">Podrobnosti →</a>` : ''}
+      </div>
+    `;
+    return card;
+  }
+
+  /* ---- Data loading ---- */
+
+  async function fetchXml(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    return res.text();
+  }
+
+  async function loadData() {
+    setLoading(true);
+    grid.innerHTML = '';
+
+    try {
+      let xmlText;
+      try {
+        // Try direct fetch first (works when the API has CORS headers)
+        xmlText = await fetchXml(RSS_URL);
+      } catch (directErr) {
+        // Fall back to CORS proxy if direct fetch is blocked
+        console.warn('Direct fetch failed, trying CORS proxy:', directErr.message);
+        xmlText = await fetchXml(RSS_URL_PROXY);
+      }
+
+      const items = parseRSS(xmlText);
+
+      setLoading(false);
+      countBadge.textContent = items.length;
+      lastUpdEl.textContent  = new Date().toLocaleString('sl-SI');
+
+      if (items.length === 0) {
+        emptyState.style.display = 'flex';
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      items.forEach((item, i) => fragment.appendChild(createCard(item, i)));
+      grid.appendChild(fragment);
+
+    } catch (err) {
+      setLoading(false);
+      showError(`Podatkov ni bilo mogoče naložiti (${err.message}).`);
+    }
+  }
+
+  // Auto-refresh every 3 minutes
+  loadData();
+  setInterval(loadData, 3 * 60 * 1000);
+</script>
+</body>
+</html>
