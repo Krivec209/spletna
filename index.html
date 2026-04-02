@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TerraQuake – Earthquake Monitor</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <span class="logo">🌍 TerraQuake</span>
+      <span class="tagline">Real-time Earthquake Monitor</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Filter Panel -->
+    <section class="filter-panel card">
+      <h2>Search &amp; Filter</h2>
+
+      <div class="filter-row">
+        <label for="endpoint-select">Query type</label>
+        <select id="endpoint-select">
+          <option value="recent">Recent (this year)</option>
+          <option value="today">Today</option>
+          <option value="last-week">Last 7 days</option>
+          <option value="month">By month / year</option>
+          <option value="range-time">Date range</option>
+          <option value="location">Near location</option>
+          <option value="region">Italian region</option>
+          <option value="depth">By depth</option>
+          <option value="eventId">Single event ID</option>
+        </select>
+      </div>
+
+      <!-- Month / year -->
+      <div class="filter-group" id="group-month" hidden>
+        <div class="filter-row">
+          <label for="input-year">Year</label>
+          <input type="number" id="input-year" placeholder="2025" min="1990" max="2099" />
+        </div>
+        <div class="filter-row">
+          <label for="input-month">Month</label>
+          <input type="number" id="input-month" placeholder="1–12" min="1" max="12" />
+        </div>
+      </div>
+
+      <!-- Date range -->
+      <div class="filter-group" id="group-range" hidden>
+        <div class="filter-row">
+          <label for="input-startdate">Start date</label>
+          <input type="date" id="input-startdate" />
+        </div>
+        <div class="filter-row">
+          <label for="input-enddate">End date</label>
+          <input type="date" id="input-enddate" />
+        </div>
+      </div>
+
+      <!-- Location -->
+      <div class="filter-group" id="group-location" hidden>
+        <div class="filter-row">
+          <label for="input-lat">Latitude</label>
+          <input type="number" id="input-lat" placeholder="e.g. 41.9" step="any" />
+        </div>
+        <div class="filter-row">
+          <label for="input-lon">Longitude</label>
+          <input type="number" id="input-lon" placeholder="e.g. 12.5" step="any" />
+        </div>
+        <div class="filter-row">
+          <label for="input-radius">Radius (km)</label>
+          <input type="number" id="input-radius" placeholder="500" min="1" />
+        </div>
+      </div>
+
+      <!-- Region -->
+      <div class="filter-group" id="group-region" hidden>
+        <div class="filter-row">
+          <label for="input-region">Region</label>
+          <input type="text" id="input-region" placeholder="e.g. Sicilia" list="regions-list" />
+          <datalist id="regions-list">
+            <option value="Sicilia" />
+            <option value="Calabria" />
+            <option value="Campania" />
+            <option value="Lazio" />
+            <option value="Toscana" />
+            <option value="Lombardia" />
+            <option value="Veneto" />
+            <option value="Emilia-Romagna" />
+            <option value="Piemonte" />
+            <option value="Sardegna" />
+          </datalist>
+        </div>
+      </div>
+
+      <!-- Depth -->
+      <div class="filter-group" id="group-depth" hidden>
+        <div class="filter-row">
+          <label for="input-depth">Max depth (km)</label>
+          <input type="number" id="input-depth" placeholder="70" min="0" />
+        </div>
+      </div>
+
+      <!-- Event ID -->
+      <div class="filter-group" id="group-eventid" hidden>
+        <div class="filter-row">
+          <label for="input-eventid">Event ID</label>
+          <input type="number" id="input-eventid" placeholder="e.g. 44278572" min="1" />
+        </div>
+      </div>
+
+      <!-- Pagination (hidden for eventId) -->
+      <div class="filter-group" id="group-pagination">
+        <div class="filter-row">
+          <label for="input-limit">Results per page</label>
+          <select id="input-limit">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button id="btn-search" class="btn-primary">🔍 Search</button>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="results-section">
+      <div id="status-bar" class="status-bar" hidden></div>
+
+      <div id="loading" class="loading" hidden>
+        <div class="spinner"></div>
+        <span>Fetching earthquakes…</span>
+      </div>
+
+      <div id="error-box" class="error-box" hidden></div>
+
+      <!-- Single event detail card -->
+      <div id="event-detail" class="card event-detail" hidden></div>
+
+      <!-- Table view -->
+      <div id="table-wrapper" class="table-wrapper" hidden>
+        <table id="eq-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date / Time (UTC)</th>
+              <th>Magnitude</th>
+              <th>Depth (km)</th>
+              <th>Location / Region</th>
+              <th>Lat / Lon</th>
+            </tr>
+          </thead>
+          <tbody id="eq-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination controls -->
+      <div id="pagination" class="pagination" hidden>
+        <button id="btn-prev" class="btn-secondary" disabled>← Prev</button>
+        <span id="page-info"></span>
+        <button id="btn-next" class="btn-secondary">Next →</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Data provided by <a href="https://api.terraquakeapi.com" target="_blank" rel="noopener">TerraQuake API</a></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
